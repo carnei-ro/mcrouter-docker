@@ -1,0 +1,84 @@
+version: '3'
+
+services:
+
+  mcrouter:
+    image: leandrocarneiro/mcrouter:ubuntu-18.04
+    depends_on:
+      - memcached-node1
+      - memcached-node2
+    command:
+      - |
+        --config-str={
+            "pools": {
+              "A": {
+                "servers": [
+                  "memcached-node1:11211",
+                  "memcached-node2:11211"
+                ]
+              }
+            },
+            "route": "PoolRoute|A"
+          }
+      - -p 11211
+    ports:
+      - "11211:11211"
+
+  memcached-node1:
+    image: memcached
+    ports:
+      - "11212:11211"
+
+  memcached-node2:
+    image: memcached
+    ports:
+      - "11213:11211"
+
+  memcached-exporter1:
+    image: bitnami/memcached-exporter:0.9.0
+    depends_on:
+      - memcached-node1
+    command:
+      - --memcached.address=memcached-node1:11211
+    ports:
+      - "9151:9150"
+
+  memcached-exporter2:
+    image: bitnami/memcached-exporter:0.9.0
+    depends_on:
+      - memcached-node2
+    command:
+      - --memcached.address=memcached-node2:11211
+    ports:
+      - "9152:9150"
+
+  prometheus:
+    image: prom/prometheus:v2.1.0
+    depends_on:
+      - memcached-exporter1
+      - memcached-exporter2
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+
+  memslap:
+    image: alpine:3.11
+    depends_on:
+      - mcrouter
+      - prometheus
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sleep 60
+        apk add --no-cache libmemcached
+        memslap --server=mcrouter:11211 --concurrency=8
+        sleep 30
+        memslap --server=memcached-node1:11211 --concurrency=8
+        sleep 30
+        memslap --server=memcached-node2:11211 --concurrency=8

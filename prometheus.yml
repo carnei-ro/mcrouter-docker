@@ -1,0 +1,24 @@
+global:
+  scrape_interval:     5s
+  evaluation_interval: 5s
+
+# rule_files: {}
+
+# alerting: {}
+
+scrape_configs:
+  - job_name: 'memcached-exporter1'
+    scrape_interval: 5s
+    dns_sd_configs:
+      - names:
+          - 'memcached-exporter1'
+        type: 'A'
+        port: 9150
+
+  - job_name: 'memcached-exporter2'
+    scrape_interval: 5s
+    dns_sd_configs:
+      - names:
+          - 'memcached-exporter2'
+        type: 'A'
+        port: 9150

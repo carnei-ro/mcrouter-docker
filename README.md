@@ -121,3 +121,11 @@ spec:
     app: mcrouter
   type: ClusterIP
 ```
+
+## PoC
+
+![PoC](poc.png)
+
+- "Load Test 1" => MCRouter (split 50/50) - ~40k hits each
+- "Load Test 2" => node1 (green line) - ~120k hits
+- "Load Test 3" => node2 (red line) - ~120k hits
